@@ -1,0 +1,40 @@
+{
+  "default_model": "yolov8n.pt",
+  "models_dir": "models/",
+  "last_opened_video": "C:/Users/TYLORD/Videos/HELLDIVERS\u2122 2 - 2025-07-23 6-46-15 PM.mp4",
+  "video_import": {
+    "watch_folders": [
+      "C:/Users/TYLORD/Videos",
+      "C:/Videos"
+    ],
+    "default_file_filter": "*.mp4;*.avi;*.mkv;*.mov"
+  },
+  "preview": {
+    "use_ffpyplayer": true,
+    "fallback_to_opencv": true,
+    "auto_play_on_open": true,
+    "window_size": {
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "audio": {
+    "sound_enabled": true,
+    "volume": 0.8
+  },
+  "detection": {
+    "confidence_threshold": 0.35,
+    "iou_threshold": 0.45,
+    "classes_to_detect": []
+  },
+  "ui": {
+    "theme": "light",
+    "show_overlays": true,
+    "save_window_geometry": true
+  },
+  "logging": {
+    "log_file": "app_preview.log",
+    "level": "INFO"
+  },
+  "sound_enabled": true
+}

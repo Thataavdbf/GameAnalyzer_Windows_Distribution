@@ -1,0 +1,152 @@
+[
+    {
+        "timestamp": 0.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 1.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 2.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 3.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 4.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 5.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 6.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 7.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 8.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    },
+    {
+        "timestamp": 9.0,
+        "event_type": "detection",
+        "description": "player detected",
+        "metadata": {
+            "class_name": "player",
+            "confidence": 0.95,
+            "bbox": [
+                50,
+                50,
+                100,
+                100
+            ]
+        }
+    }
+]

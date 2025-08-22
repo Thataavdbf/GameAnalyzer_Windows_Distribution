@@ -1,0 +1,19 @@
+[
+    {
+        "timestamp": "2025-08-19T09:09:38.713483",
+        "event_type": "detection",
+        "description": "Player detected",
+        "metadata": {
+            "player_id": 1,
+            "location": "(100, 200)"
+        }
+    },
+    {
+        "timestamp": "2025-08-19T09:09:38.713578",
+        "event_type": "action",
+        "description": "Shot fired",
+        "metadata": {
+            "weapon": "Liberator"
+        }
+    }
+]
