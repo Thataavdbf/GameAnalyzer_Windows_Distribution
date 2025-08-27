@@ -28,8 +28,46 @@ except Exception:
 class AudioAnalysisAnalyzer:
     def __init__(self, model_path: str = None):
         self.model_path = model_path
-        # If a model path is provided and exists, we could load it here.
-        self._has_model = bool(model_path and os.path.exists(model_path))
+        # If a model path is provided and exists, try to load a model (joblib/sklearn, Keras, or PyTorch)
+        self._has_model = False
+        self._model = None
+        self._label_map = None
+        if model_path and os.path.exists(model_path):
+            # try joblib (scikit-learn)
+            try:
+                import joblib
+                self._model = joblib.load(model_path)
+                self._has_model = True
+            except Exception:
+                # try Keras (use dynamic import to avoid static analyzers complaining if tensorflow is not installed)
+                try:
+                    import importlib
+                    # prefer tensorflow.keras if available, otherwise try standalone keras
+                    try:
+                        tf = importlib.import_module('tensorflow')
+                        _load_keras = getattr(tf.keras.models, 'load_model')
+                    except Exception:
+                        keras = importlib.import_module('keras')
+                        _load_keras = getattr(keras.models, 'load_model')
+                    self._model = _load_keras(model_path)
+                    self._has_model = True
+                except Exception:
+                    # try PyTorch
+                    try:
+                        import torch
+                        self._model = torch.load(model_path)
+                        self._has_model = True
+                    except Exception:
+                        self._has_model = False
+            # try to load label map from model_path + '.labels.json'
+            try:
+                import json
+                labels_path = model_path + '.labels.json'
+                if os.path.exists(labels_path):
+                    with open(labels_path, 'r', encoding='utf-8') as f:
+                        self._label_map = json.load(f)
+            except Exception:
+                self._label_map = None
 
     def needs_training(self) -> bool:
         """Return True if no model is present (we're using the rule-based fallback)."""
@@ -69,6 +107,22 @@ class AudioAnalysisAnalyzer:
             return centroid
         except Exception:
             return 0.0
+
+    def _feature_vector(self, samples: np.ndarray, sr: int) -> np.ndarray:
+        """Return a numeric feature vector for a given window of samples."""
+        rms = self._rms(samples)
+        zcr = self._zcr(samples)
+        centroid = self._spectral_centroid(samples, sr)
+        peak = float(np.max(np.abs(samples))) if samples.size > 0 else 0.0
+        # spectral flatness (geometric mean / arithmetic mean)
+        try:
+            S = np.abs(np.fft.rfft(samples.astype(float)))
+            gm = float(np.exp(np.mean(np.log(S + 1e-12))))
+            am = float(np.mean(S) + 1e-12)
+            flatness = gm / am
+        except Exception:
+            flatness = 0.0
+        return np.array([rms, zcr, centroid, peak, flatness], dtype=float)
 
     def _load_from_path(self, path: str):
         if SCIPY_AVAILABLE:
@@ -143,28 +197,80 @@ class AudioAnalysisAnalyzer:
         sr = int(sr) if sr else 22050
 
         # compute simple features
+        events: List[Dict[str, Any]] = []
+
+        # If a trained model is available, compute features and run inference.
+        if self._has_model and self._model is not None:
+            try:
+                fv = self._feature_vector(samples, sr).reshape(1, -1)
+                # scikit-learn style
+                if hasattr(self._model, "predict_proba"):
+                    probs = self._model.predict_proba(fv)[0]
+                    class_idx = int(probs.argmax())
+                    conf = float(probs[class_idx])
+                else:
+                    # keras or other: predict -> probabilities or logits
+                    pred = self._model.predict(fv)
+                    # flatten
+                    arr = np.asarray(pred).ravel()
+                    class_idx = int(arr.argmax())
+                    conf = float(arr[class_idx])
+
+                # Resolve label
+                label = None
+                if self._label_map:
+                    label = self._label_map.get(str(class_idx)) or self._label_map.get(class_idx)
+                # try model attribute
+                if label is None and hasattr(self._model, "classes_"):
+                    try:
+                        label = str(self._model.classes_[class_idx])
+                    except Exception:
+                        label = None
+
+                if label is None:
+                    # fallback mapping for common labels
+                    fallback = {0: "loud_sound", 1: "speech_like", 2: "high_freq_noise"}
+                    label = fallback.get(class_idx, f"class_{class_idx}")
+
+                events.append({
+                    "type": label,
+                    "timestamp": float(timestamp),
+                    "confidence": float(conf),
+                    "features": fv.flatten().tolist(),
+                })
+                return events
+            except Exception:
+                # if model inference fails, fall back to heuristics
+                self._has_model = False
+
+        # Heuristic fallback (same as before)
         rms = self._rms(samples)
         zcr = self._zcr(samples)
         centroid = self._spectral_centroid(samples, sr)
-
-        events: List[Dict[str, Any]] = []
+        peak = float(np.max(np.abs(samples))) if samples.size > 0 else 0.0
 
         # Rule 1: Loud transient / event
-        # Use a dynamic threshold relative to RMS of the segment
-        loud_thresh = max(0.02, rms * 1.8)
-        if rms >= loud_thresh:
-            conf = min(1.0, rms / (loud_thresh + 1e-9))
+        if peak > 0.25:
+            conf = min(1.0, peak)
             events.append({
                 "type": "loud_sound",
                 "timestamp": float(timestamp),
                 "confidence": float(conf),
                 "rms": float(rms),
+                "peak": peak,
             })
+        else:
+            if rms >= 0.02:
+                conf = min(1.0, rms / 0.1)
+                events.append({
+                    "type": "loud_sound",
+                    "timestamp": float(timestamp),
+                    "confidence": float(conf),
+                    "rms": float(rms),
+                })
 
-        # Rule 2: speech-like (moderate rms, low centroid, moderate zcr)
-        # heuristic thresholds chosen to be permissive; tune for your data
+        # Rule 2: speech-like
         if (rms > 0.005 and rms < 0.5) and (zcr > 0.001 and zcr < 0.2) and (centroid > 50 and centroid < 4000):
-            # confidence increases when centroid is lower and zcr is in speech-like range
             conf = 1.0 - (abs(centroid - 1000.0) / 4000.0)
             conf = max(0.0, min(1.0, conf))
             events.append({
